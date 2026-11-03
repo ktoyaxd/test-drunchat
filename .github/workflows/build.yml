@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Принудительно используем стабильную версию
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20' # Обновил до 20
 
       - name: Install dependencies
         run: |
@@ -23,10 +23,10 @@ jobs:
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5 # Обновил до v5
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17' # Используем 17, она стабильнее для Android
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -47,5 +47,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: KtoChat-APK
+          name: DrunChat-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
