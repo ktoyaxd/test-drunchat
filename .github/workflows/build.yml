@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04 # Принудительно используем стабильную версию
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Обновил до 20
+          node-version: '22'
 
       - name: Install dependencies
         run: |
@@ -23,15 +23,24 @@ jobs:
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Setup Java
-        uses: actions/setup-java@v5 # Обновил до v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' # Используем 17, она стабильнее для Android
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
+
+      # 👇 САМОЕ ВАЖНОЕ: принудительно задаём конфиг
+      - name: Create Capacitor Config
+        run: |
+          echo '{
+            "appId": "com.kto.chat",
+            "appName": "KtoЧат",
+            "webDir": "."
+          }' > capacitor.config.json
 
       - name: Add Android platform
         run: |
