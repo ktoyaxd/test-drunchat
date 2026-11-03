@@ -33,14 +33,10 @@ jobs:
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
 
-      # 👇 САМОЕ ВАЖНОЕ: принудительно задаём конфиг
-      - name: Create Capacitor Config
+      # 👇 ИНИЦИАЛИЗАЦИЯ КАПАСИТОРА С ЯВНЫМ УКАЗАНИЕМ ПАПКИ (.)
+      - name: Init Capacitor
         run: |
-          echo '{
-            "appId": "com.kto.chat",
-            "appName": "KtoЧат",
-            "webDir": "."
-          }' > capacitor.config.json
+          npx cap init "KtoЧат" "com.kto.chat" --web-dir="."
 
       - name: Add Android platform
         run: |
