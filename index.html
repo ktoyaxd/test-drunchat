@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KtoЧат</title>
+  
+  <!-- PocketBase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.3/dist/pocketbase.umd.js"></script>
+  
+  <!-- Стили -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/chats.css">
+  <link rel="stylesheet" href="css/messages.css">
+</head>
+<body>
+
+  <!-- Экран логина -->
+  <div id="loginScreen">
+    <main class="main-content">
+      <div class="form-wrapper">
+        <h1 class="title">Вход</h1>
+        <p class="subtitle">Введите ваш логин и пароль</p>
+        <form id="loginForm">
+          <div class="input-group">
+            <input type="text" id="login" class="input-field" placeholder=" " required>
+            <label for="login" class="input-label">Логин</label>
+          </div>
+          <div class="input-group">
+            <input type="password" id="password" class="input-field" placeholder=" " required>
+            <label for="password" class="input-label">Пароль</label>
+          </div>
+          <div class="error-text" id="errorBox">Неверный логин или пароль</div>
+        </form>
+      </div>
+    </main>
+    <div class="fab-container">
+      <button class="fab" type="submit" form="loginForm" id="submitBtn">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <div class="spinner"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Экран списка чатов -->
+  <div id="chatScreen">
+    <header class="header">
+      <div class="header-title" id="headerTitle">KtoЧат</div>
+      <div class="header-actions">
+        <button class="icon-btn" id="searchBtn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
+        <button class="icon-btn" id="menuBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg></button>
+      </div>
+    </header>
+    <div class="search-bar-container" id="searchContainer">
+      <input type="text" class="search-input" id="searchInput" placeholder="Поиск чатов...">
+    </div>
+    <main class="chat-list" id="chatList">
+      <div class="loader">Загрузка чатов...</div>
+    </main>
+  </div>
+
+  <!-- Экран переписки -->
+  <div id="messagesScreen">
+    <div class="msg-header">
+      <button class="back-btn" id="backToChatsBtn"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div class="msg-title" id="chatPartnerName">Чат</div>
+    </div>
+    <div class="messages-area" id="messagesArea"></div>
+    <button class="scroll-down-btn" id="scrollDownBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+    <div class="msg-input-area">
+      <input type="text" class="msg-input" id="msgInput" placeholder="Сообщение...">
+      <button class="send-btn" id="sendBtn"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Экран настроек -->
+  <div id="settingsScreen">
+    <header class="header">
+      <button class="back-btn" id="backFromSettingsBtn" style="padding: 0 16px 0 0;">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-title">Настройки</div>
+    </header>
+    
+    <div class="settings-content">
+      <div class="settings-profile" id="settingsProfileBlock">
+        <div class="settings-avatar" id="settingsAvatar">?</div>
+        <div class="settings-name" id="settingsName">Загрузка...</div>
+        <div class="settings-phone" id="settingsPhone"></div>
+      </div>
+
+      <div class="settings-list">
+        <div class="settings-item" id="settingsAccountBtn">
+          <div class="settings-icon" style="background: #2196F3;">👤</div>
+          <div class="settings-text">
+            <div class="settings-title">Аккаунт</div>
+            <div class="settings-subtitle">Номер, имя пользователя, «О себе»</div>
+          </div>
+        </div>
+        
+        <div class="settings-item" id="settingsDataBtn">
+          <div class="settings-icon" style="background: #9C27B0;">💾</div>
+          <div class="settings-text">
+            <div class="settings-title">Данные и память</div>
+            <div class="settings-subtitle">Настройки загрузки медиафайлов</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- НИЖНЕЕ МЕНЮ (ВЫНЕСЕНО ИЗ ЭКРАНОВ, ТЕПЕРЬ ВСЕГДА НА ЭКРАНЕ) -->
+  <nav class="bottom-nav" id="mainBottomNav">
+    <a href="#" class="nav-item active" data-tab="chats">
+      <div><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+      <span>Чаты</span>
+    </a>
+    <a href="#" class="nav-item" data-tab="settings">
+      <div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      <span>Настройки</span>
+    </a>
+  </nav>
+
+  <!-- Подключение скриптов -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/stickers.js"></script>
+  <script src="js/images.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
