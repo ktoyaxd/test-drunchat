@@ -33,16 +33,26 @@ jobs:
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
 
-      # 👇 ИНИЦИАЛИЗАЦИЯ КАПАСИТОРА С ЯВНЫМ УКАЗАНИЕМ ПАПКИ (.)
+      # 1. Создаём папку www и копируем туда файлы проекта
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p www
+          cp -r index.html css js www/ || true
+
+      # 2. Инициализируем Capacitor, указывая папку www
       - name: Init Capacitor
         run: |
-          npx cap init "KtoЧат" "com.kto.chat" --web-dir="."
+          npx cap init "KtoЧат" "com.kto.chat" --web-dir="www"
 
-      - name: Add Android platform
-        run: |
-          npx cap add android
-          npx cap sync
+      # 3. Добавляем Android
+      - name: Add Android
+        run: npx cap add android
 
+      # 4. Синхронизируем
+      - name: Sync
+        run: npx cap sync
+
+      # 5. Собираем
       - name: Build APK
         run: |
           cd android
