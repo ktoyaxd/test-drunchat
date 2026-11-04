@@ -22,11 +22,14 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   ].filter(Boolean)));
 
   let authSuccess = false;
+  let authRecord = null;
+
   for (const candidate of candidates) {
     try {
       const auth = await pb.collection("users").authWithPassword(candidate, password);
       pb.authStore.save(auth.token, auth.record);
       window.AppState.currentUserId = auth.record.id;
+      authRecord = auth.record;
       authSuccess = true;
       break;
     } catch (err) { 
@@ -38,8 +41,18 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('chatScreen').classList.add('active');
     
+    // Принудительно показываем меню
+    if (window.setNavVisible) window.setNavVisible(true);
+
+    if (authRecord) {
+      saveAccountToStorage(authRecord);
+    }
+    
     await window.refreshChats();
     await window.initRealtime();
+    
+    submitBtn.classList.remove('loading');
+    submitBtn.disabled = false;
   } else {
     errorBox.classList.add('show');
     submitBtn.classList.remove('loading');
@@ -47,16 +60,38 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   }
 });
 
-// АВТО-ВХОД
+// Функция сохранения аккаунта в localStorage
+function saveAccountToStorage(user) {
+  let accounts = JSON.parse(localStorage.getItem('drun_accounts') || '[]');
+  accounts = accounts.filter(a => a.id !== user.id);
+  accounts.push({
+    id: user.id,
+    name: user.name || user.username,
+    username: user.username,
+    avatar: user.avatar || null
+  });
+  localStorage.setItem('drun_accounts', JSON.stringify(accounts));
+}
+
+// ==========================================
+// АВТО-ВХОД ПРИ ЗАГРУЗКЕ
+// ==========================================
 window.addEventListener("load", async () => {
   if (pb.authStore.isValid) {
-    window.AppState.currentUserId = pb.authStore.model.id;
+    window.AppState.currentUserId = pb.authStore.record?.id || pb.authStore.model?.id;
+    
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('chatScreen').classList.add('active');
+    
+    // Принудительно показываем меню
+    if (window.setNavVisible) window.setNavVisible(true);
     
     setTimeout(async () => {
       await window.refreshChats();
       await window.initRealtime();
     }, 100);
+  } else {
+    // Скрываем меню, если не авторизованы
+    if (window.setNavVisible) window.setNavVisible(false);
   }
 });
