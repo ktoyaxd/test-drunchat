@@ -2,13 +2,11 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>KtoЧат</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>DrunLite</title>
   
-  <!-- PocketBase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.3/dist/pocketbase.umd.js"></script>
   
-  <!-- Стили -->
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/login.css">
   <link rel="stylesheet" href="css/chats.css">
@@ -46,7 +44,9 @@
   <!-- Экран списка чатов -->
   <div id="chatScreen">
     <header class="header">
-      <div class="header-title" id="headerTitle">KtoЧат</div>
+      <div class="header-title" id="headerTitle" style="display: flex; align-items: center;">
+        <img src="assets/icons/icon_DLwhite.png" alt="DrunLite" style="height: 28px; width: auto;">
+      </div>
       <div class="header-actions">
         <button class="icon-btn" id="searchBtn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
         <button class="icon-btn" id="menuBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg></button>
@@ -77,9 +77,6 @@
   <!-- Экран настроек -->
   <div id="settingsScreen">
     <header class="header">
-      <button class="back-btn" id="backFromSettingsBtn" style="padding: 0 16px 0 0;">
-        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      </button>
       <div class="header-title">Настройки</div>
     </header>
     
@@ -106,11 +103,105 @@
             <div class="settings-subtitle">Настройки загрузки медиафайлов</div>
           </div>
         </div>
+
+        <div class="settings-item" id="settingsSlyapaBtn">
+          <div class="settings-icon" style="background: #f59e0b; padding: 0; overflow: hidden;">
+            <img src="assets/icons/icon_slyapa.png" style="width: 50%; height: 50%; object-fit: cover;" alt="Шляпы">
+          </div>
+          <div class="settings-text">
+            <div class="settings-title">Шляпы</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- НИЖНЕЕ МЕНЮ (ВЫНЕСЕНО ИЗ ЭКРАНОВ, ТЕПЕРЬ ВСЕГДА НА ЭКРАНЕ) -->
+  <!-- ЭКРАН АККАУНТА -->
+  <div id="accountScreen" class="sub-screen">
+    <header class="header">
+      <button class="back-btn" onclick="showScreen('settings')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-title">Аккаунт</div>
+    </header>
+    
+    <div class="settings-content">
+      <div class="settings-list">
+        <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px;">
+          <div style="font-size: 12px; color: var(--tg-text-secondary);">Ваше имя</div>
+          <div style="font-size: 18px; font-weight: 500;" id="accName">Загрузка...</div>
+          <div style="font-size: 12px; color: var(--tg-text-secondary); margin-top: 8px;">О себе</div>
+          <div style="font-size: 14px;" id="accBio">—</div>
+        </div>
+      </div>
+
+      <div class="settings-list" style="margin-top: 16px;">
+        <div class="settings-item" style="padding: 12px 16px; color: var(--tg-btn-bg);" id="addAccountBtn">
+          <div class="settings-icon" style="background: rgba(34,154,240,0.1); color: var(--tg-btn-bg);">➕</div>
+          <div class="settings-text">
+            <div class="settings-title">Добавить аккаунт</div>
+          </div>
+        </div>
+        <div id="accountsList"></div>
+      </div>
+
+      <div class="settings-list" style="margin-top: 16px;">
+        <div class="settings-item" style="color: #ff5252;" id="logoutBtn">
+          <div class="settings-icon" style="background: rgba(255,82,82,0.1); padding: 0; overflow: hidden;">
+            <img src="assets/icons/icon_exit.png" style="width: 50%; height: 50%; object-fit: cover;" alt="Выход">
+          </div>
+          <div class="settings-text">
+            <div class="settings-title">Выход</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ДАННЫХ И ПАМЯТИ -->
+  <div id="dataScreen" class="sub-screen">
+    <header class="header">
+      <button class="back-btn" onclick="showScreen('settings')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-title">Данные и память</div>
+    </header>
+    <div class="settings-content">
+      <div style="text-align: center; padding: 40px 20px; color: var(--tg-text-secondary);">
+        <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+        <div>Кеш пока пуст</div>
+        <div style="font-size: 14px; margin-top: 8px;">Загрузите стикеры или фото, чтобы они появились здесь</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ШЛЯП -->
+  <div id="slyapaScreen" class="sub-screen">
+    <header class="header">
+      <button class="back-btn" onclick="showScreen('settings')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-title">Шляпы</div>
+    </header>
+    
+    <div class="settings-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1;">
+      <!-- 3D Шляпа и блёстки -->
+      <div class="slyapa-container" style="margin-bottom: 20px;">
+        <div class="particles" id="particles"></div>
+        <img src="assets/icons/gold_slyapa.png" class="slyapa-3d" id="slyapa3d" alt="Gold Slyapa">
+      </div>
+
+      <!-- Реальный баланс из PocketBase -->
+      <div id="slyapaBalanceDisplay" style="font-size: 32px; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <img src="assets/icons/gold_slyapa.png" style="width: 32px; height: 32px;"> 
+        <span id="slyapaBalanceValue">...</span>
+      </div>
+      <p style="color: var(--tg-text-secondary); margin-bottom: 20px;">Ваш баланс</p>
+
+    </div>
+  </div>
+
+  <!-- НИЖНЕЕ МЕНЮ -->
   <nav class="bottom-nav" id="mainBottomNav">
     <a href="#" class="nav-item active" data-tab="chats">
       <div><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
@@ -122,15 +213,17 @@
     </a>
   </nav>
 
-  <!-- Подключение скриптов -->
   <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/cache.js"></script>
+  <script src="js/data.js"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/stickers.js"></script>
   <script src="js/images.js"></script>
   <script src="js/chat.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/settings.js"></script>
+  <script src="js/slyapa.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
