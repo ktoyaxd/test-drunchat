@@ -64,7 +64,7 @@ jobs:
       - name: Add Android
         run: npx cap add android
 
-      # 4. Генерируем иконки
+      # 4. Генерируем иконки из assets/icon.png
       - name: Generate Icons
         run: |
           if [ -f "assets/icon.png" ]; then
@@ -79,11 +79,12 @@ jobs:
           sed -i 's/versionCode 1/versionCode 2/' android/app/build.gradle
           sed -i 's/versionName "1.0"/versionName "1.0 beta (2)"/' android/app/build.gradle
 
-      # 6. Добавляем разрешения на файловую систему
+      # 6. Добавляем разрешения на файловую систему (Включая полный доступ)
       - name: Add Android Permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i 's/<application/<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" \/>\n    <application/' $MANIFEST
+          # Добавляем MANAGE_EXTERNAL_STORAGE для доступа к Android/data
+          sed -i 's/<application/<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" \/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" \/>\n    <application/' $MANIFEST
 
       # 7. Синхронизируем и собираем
       - name: Sync
