@@ -1,5 +1,5 @@
 // ==========================================
-// js/chat.js (ИСПРАВЛЕННЫЙ С ЦИТАТАМИ)
+// js/chat.js (ИСПРАВЛЕННЫЙ С ЦИТАТАМИ И МЕНЮ)
 // ==========================================
 
 const messagesArea = document.getElementById('messagesArea');
@@ -20,12 +20,84 @@ function getUserAvatarUrl(user) {
   return fileUrl("users", user, filename);
 }
 
-async function openChat(channelId, name, type = "group") {
+async function openChat(channelId, name, type = "group", chatData = {}) {
   window.AppState.currentChatId = channelId;
   window.AppState.currentChatType = type;
   window.AppState.replyingTo = null;
   renderReplyPreview();
   
+  if (window.setNavVisible) window.setNavVisible(false);
+
+  // 👇 ПРОВЕРКА ПРАВ
+  const msgInputArea = document.querySelector(".msg-input-area");
+  const me = window.AppState.currentUserId;
+  const currentUser = pb.authStore.record || pb.authStore.model;
+  
+  let canWrite = true;
+  let lockReason = "";
+
+  // 1. Проверка для системного канала «Новости»
+  if (channelId === "news" || type === "news") {
+    const isGlobalMod = currentUser?.moderator === true 
+      || currentUser?.isModerator === true 
+      || currentUser?.email === "mikhail02323@gmail.com"; // Захардкоженный email админа из оригинала
+    
+    if (!isGlobalMod) {
+      canWrite = false;
+      lockReason = "Канал новостей только для чтения";
+    }
+  }
+  
+  // 2. Проверка для обычных каналов
+  else if (type === "channel") {
+    try {
+      const channel = await pb.collection("channels").getOne(channelId);
+      const creatorId = channel.creatorId || channel.creator || channel.createdBy || channel.user;
+      
+      let admins = channel.admins || [];
+      if (typeof admins === "string") {
+        try { admins = JSON.parse(admins); } catch (e) { admins = []; }
+      }
+      
+      const isCreator = creatorId === me;
+      const isAdmin = Array.isArray(admins) && admins.includes(me);
+      const isGlobalMod = currentUser?.moderator === true || currentUser?.isModerator === true;
+
+      if (!isCreator && !isAdmin && !isGlobalMod) {
+        canWrite = false;
+        lockReason = "Только администраторы канала могут отправлять сообщения";
+      }
+    } catch (e) {
+      console.error("Ошибка проверки прав канала:", e);
+      canWrite = false;
+      lockReason = "Не удалось проверить права доступа";
+    }
+  }
+  
+  // 3. Общий чат (__global__) и группы — писать можно всем авторизованным
+  // (canWrite остается true)
+
+  // Настраиваем UI
+  const existingLock = document.getElementById("channel-lock-msg");
+  if (existingLock) existingLock.remove();
+
+  if (!canWrite) {
+    msgInputArea.style.display = "none";
+    const lockDiv = document.createElement("div");
+    lockDiv.id = "channel-lock-msg";
+    lockDiv.style.textAlign = "center";
+    lockDiv.style.padding = "16px";
+    lockDiv.style.background = "var(--header-bg)";
+    lockDiv.style.color = "var(--tg-text-secondary)";
+    lockDiv.style.fontSize = "14px";
+    lockDiv.style.flexShrink = "0";
+    lockDiv.textContent = lockReason;
+    messagesArea.parentNode.insertBefore(lockDiv, msgInputArea);
+  } else {
+    msgInputArea.style.display = "flex";
+  }
+
+  // Дальше стандартный код загрузки сообщений...
   document.getElementById("chatPartnerName").textContent = name;
   document.getElementById("messagesScreen").classList.add('active');
   messagesArea.innerHTML = `<div class="loader">Загрузка...</div>`;
@@ -37,7 +109,6 @@ async function openChat(channelId, name, type = "group") {
       sort: "-created"
     });
     
-    // Парсим replyTo (вдруг пришло строкой)
     const items = page.items.map(m => {
       let rTo = m.replyTo;
       if (typeof rTo === "string") {
@@ -84,9 +155,8 @@ async function openChat(channelId, name, type = "group") {
     messagesArea.innerHTML = `<div class="loader">Ошибка загрузки: ${e.message}</div>`;
   }
 }
-
 // ==========================================
-// Отрисовка сообщения (С ПРАВИЛЬНОЙ ЦИТАТОЙ)
+// Отрисовка сообщения
 // ==========================================
 function renderMessage(msg) {
   const isOut = msg.senderId === window.AppState.currentUserId;
@@ -102,7 +172,6 @@ function renderMessage(msg) {
   row.style.gap = "8px";
   row.style.marginBottom = "8px";
 
-  // --- ЛОГИКА ДОЛГОГО НАЖАТИЯ ---
   let longPressTimer = null;
   let startX = 0, startY = 0;
   let isMoved = false;
@@ -131,7 +200,6 @@ function renderMessage(msg) {
     showContextMenu(msg, e.clientX, e.clientY);
   });
 
-  // Аватарка
   if (showSenderInfo) {
     const user = window.AppState.usersCache[msg.senderId];
     const avatar = document.createElement("div");
@@ -163,7 +231,6 @@ function renderMessage(msg) {
     maxWidth: "80vw"
   });
 
-  // Имя отправителя
   if (showSenderInfo) {
     const user = window.AppState.usersCache[msg.senderId];
     const name = user?.name || user?.username || "Неизвестно";
@@ -177,7 +244,6 @@ function renderMessage(msg) {
     contentWrapper.appendChild(nameDiv);
   }
 
-  // --- ФУНКЦИЯ ДЛЯ БЛОКА ЦИТАТЫ ---
   const createReplyBlock = () => {
     if (!msg.replyTo) return null;
     const replyBlock = document.createElement("div");
@@ -205,9 +271,7 @@ function renderMessage(msg) {
     return replyBlock;
   };
 
-  // --- РЕНДЕР КОНТЕНТА ---
   if (content.startsWith("mell:")) {
-    // Стикер
     const wrapper = document.createElement("div");
     const replyBlock = createReplyBlock();
     if (replyBlock) wrapper.appendChild(replyBlock);
@@ -215,53 +279,49 @@ function renderMessage(msg) {
     contentWrapper.appendChild(wrapper);
   } 
   else if (msg.image) {
-    // Фото
     const mediaWrap = document.createElement("div");
     mediaWrap.className = "media-wrap" + (msg.replyTo ? " reply-media" : "");
     
     const replyBlock = createReplyBlock();
     if (replyBlock) mediaWrap.appendChild(replyBlock);
 
-    mediaWrap.appendChild(renderImageMessage(msg));
-
-    if (content.trim()) {
-      const caption = document.createElement("div");
-      caption.className = "bubble";
-      caption.style.marginTop = "4px";
-      caption.textContent = content;
-      
-      const timeSpan = document.createElement("span");
-      timeSpan.className = "msg-time";
-      timeSpan.textContent = formatTime(msg.created);
-      caption.appendChild(timeSpan);
-      
-      mediaWrap.appendChild(caption);
-    } else {
-      // Время поверх фото
-      const timeSpan = document.createElement("span");
-      timeSpan.className = "msg-time";
-      timeSpan.style.position = "absolute";
-      timeSpan.style.bottom = "8px";
-      timeSpan.style.right = "8px";
-      timeSpan.style.background = "rgba(0,0,0,0.5)";
-      timeSpan.style.padding = "2px 4px";
-      timeSpan.style.borderRadius = "4px";
-      timeSpan.textContent = formatTime(msg.created);
-      
-      const imgContainer = document.createElement("div");
-      imgContainer.style.position = "relative";
-      imgContainer.appendChild(renderImageMessage(msg));
-      imgContainer.appendChild(timeSpan);
-      
-      // Удаляем предыдущий вызов renderImageMessage, чтобы не дублировать
-      mediaWrap.querySelector('.photo-wrap')?.remove();
-      mediaWrap.appendChild(imgContainer);
-    }
+    // 👇 Асинхронно ждем загрузки фото из кеша/сети
+    renderImageMessage(msg).then(photoEl => {
+      if (content.trim()) {
+        const caption = document.createElement("div");
+        caption.className = "bubble";
+        caption.style.marginTop = "4px";
+        caption.textContent = content;
+        
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "msg-time";
+        timeSpan.textContent = formatTime(msg.created);
+        caption.appendChild(timeSpan);
+        
+        mediaWrap.appendChild(photoEl);
+        mediaWrap.appendChild(caption);
+      } else {
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "msg-time";
+        timeSpan.style.position = "absolute";
+        timeSpan.style.bottom = "8px";
+        timeSpan.style.right = "8px";
+        timeSpan.style.background = "rgba(0,0,0,0.5)";
+        timeSpan.style.padding = "2px 4px";
+        timeSpan.style.borderRadius = "4px";
+        timeSpan.textContent = formatTime(msg.created);
+        
+        const imgContainer = document.createElement("div");
+        imgContainer.style.position = "relative";
+        imgContainer.appendChild(photoEl);
+        imgContainer.appendChild(timeSpan);
+        mediaWrap.appendChild(imgContainer);
+      }
+    });
     
     contentWrapper.appendChild(mediaWrap);
   } 
   else {
-    // Текст (цитата строго внутри пузыря)
     const bubble = document.createElement("div");
     bubble.className = "bubble";
     
@@ -285,85 +345,6 @@ function renderMessage(msg) {
 
   row.appendChild(contentWrapper);
   messagesArea.appendChild(row);
-}
-
-// ==========================================
-// Контекстное меню
-// ==========================================
-function showContextMenu(msg, x, y) {
-  closeContextMenu();
-
-  const menu = document.createElement("div");
-  menu.className = "context-menu";
-  menu.id = "ctx-menu";
-  menu.style.left = `${Math.min(x, window.innerWidth - 160)}px`;
-  menu.style.top = `${Math.min(y, window.innerHeight - 60)}px`;
-
-  const replyBtn = document.createElement("button");
-  replyBtn.innerHTML = "↩️ Ответить";
-  replyBtn.onclick = (e) => {
-    e.stopPropagation();
-    window.AppState.replyingTo = msg;
-    renderReplyPreview();
-    msgInput.focus();
-    closeContextMenu();
-  };
-
-  menu.appendChild(replyBtn);
-  document.body.appendChild(menu);
-
-  setTimeout(() => {
-    document.addEventListener("click", closeContextMenu, { once: true });
-  }, 100);
-}
-
-function closeContextMenu() {
-  const menu = document.getElementById("ctx-menu");
-  if (menu) menu.remove();
-}
-
-// ==========================================
-// Прыжок к сообщению
-// ==========================================
-function jumpToMessage(id) {
-  const target = document.querySelector(`[data-message-id="${id}"]`);
-  if (!target) return;
-  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  target.animate([
-    { backgroundColor: "rgba(139,92,246,0.3)" },
-    { backgroundColor: "transparent" }
-  ], { duration: 1000 });
-}
-
-// ==========================================
-// Панель ответа над инпутом
-// ==========================================
-function renderReplyPreview() {
-  const existing = document.getElementById("reply-preview");
-  if (existing) existing.remove();
-
-  if (!window.AppState.replyingTo) return;
-
-  const msg = window.AppState.replyingTo;
-  const author = window.AppState.usersCache[msg.senderId]?.name || "Вы";
-  const text = msg.content || (msg.image ? "📷 Фото" : "Вложение");
-
-  const panel = document.createElement("div");
-  panel.id = "reply-preview";
-  panel.innerHTML = `
-    <div class="reply-info">
-      <div class="reply-name">Ответ: ${author}</div>
-      <div class="reply-text">${text}</div>
-    </div>
-    <button class="cancel-reply" id="cancel-reply">✕</button>
-  `;
-
-  msgInputArea.parentNode.insertBefore(panel, msgInputArea);
-
-  document.getElementById("cancel-reply").onclick = () => {
-    window.AppState.replyingTo = null;
-    renderReplyPreview();
-  };
 }
 
 // ==========================================
@@ -420,10 +401,45 @@ messagesArea.onscroll = () => {
   else scrollDownBtn.classList.remove("visible");
 };
 
+// 👇 ВОЗВРАЩАЕМ МЕНЮ ПРИ НАЖАТИИ "НАЗАД"
 document.getElementById("backToChatsBtn").onclick = () => {
   document.getElementById("messagesScreen").classList.remove('active');
+  
+  // Показываем меню
+  if (window.setNavVisible) window.setNavVisible(true);
+  
   if (window.AppState.unsubscribeMessages) { 
     window.AppState.unsubscribeMessages(); 
     window.AppState.unsubscribeMessages = null; 
   }
 };
+function renderReplyPreview() {
+  const existing = document.getElementById("reply-preview");
+  if (existing) existing.remove();
+
+  if (!window.AppState.replyingTo) return;
+
+  const msg = window.AppState.replyingTo;
+  const author = window.AppState.usersCache[msg.senderId]?.name || "Вы";
+  const text = msg.content || (msg.image ? "Фото" : "Вложение");
+
+  const panel = document.createElement("div");
+  panel.id = "reply-preview";
+  panel.innerHTML = `
+    <div class="reply-info">
+      <div class="reply-name">Ответ: ${author}</div>
+      <div class="reply-text">${text}</div>
+    </div>
+    <button class="cancel-reply" id="cancel-reply">✕</button>
+  `;
+
+  const inputArea = document.querySelector(".msg-input-area");
+  if (inputArea) {
+    inputArea.parentNode.insertBefore(panel, inputArea);
+  }
+
+  document.getElementById("cancel-reply").onclick = () => {
+    window.AppState.replyingTo = null;
+    renderReplyPreview();
+  };
+}
