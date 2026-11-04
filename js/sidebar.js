@@ -6,9 +6,6 @@ function dmKey(a, b) {
   return [a, b].sort().join(":");
 }
 
-// ==========================================
-// 1. Мои каналы (с учетом createdBy и admins)
-// ==========================================
 async function loadMyChannels() {
   const me = window.AppState.currentUserId;
   const raw = await pb.collection("channels").getFullList().catch(() => []);
@@ -21,9 +18,6 @@ async function loadMyChannels() {
   );
 }
 
-// ==========================================
-// 2. Друзья
-// ==========================================
 async function loadFriends() {
   const me = window.AppState.currentUserId;
   const reqs = await pb.collection("friendRequests").getFullList({
@@ -39,14 +33,10 @@ async function loadFriends() {
   return users.filter(u => u && u.id);
 }
 
-// ==========================================
-// 3. Загрузка последних сообщений (Вариант B - N+1)
-// ==========================================
 async function loadLastMessages(mine, friends) {
   const me = window.AppState.currentUserId;
   const lastMessages = {};
 
-  // Собираем все нужные ID
   const targetIds = [];
   for (const c of mine) {
     if (c.id) targetIds.push({ id: c.id, prefix: c.type === "channel" ? "channel" : "group" });
@@ -58,7 +48,6 @@ async function loadLastMessages(mine, friends) {
   targetIds.push({ id: "news", prefix: "news" });
   targetIds.push({ id: "__global__", prefix: "global" });
 
-  // Убираем дубликаты по id
   const uniqueTargets = [];
   const seen = new Set();
   for (const t of targetIds) {
@@ -68,7 +57,6 @@ async function loadLastMessages(mine, friends) {
     }
   }
 
-  // Функция для получения одного сообщения
   const fetchOne = async (target) => {
     try {
       const page = await pb.collection("messages").getList(1, 1, {
@@ -85,7 +73,6 @@ async function loadLastMessages(mine, friends) {
         senderId: m.senderId
       };
 
-      // Записываем под все возможные ключи для этого чата
       lastMessages[target.id] = entry;
       if (target.prefix === "channel") lastMessages[`channel-${target.id}`] = entry;
       if (target.prefix === "group") lastMessages[`group-${target.id}`] = entry;
@@ -98,27 +85,21 @@ async function loadLastMessages(mine, friends) {
     }
   };
 
-  // Запускаем параллельно, но чанками по 10, чтобы не заспамить сервер
   const CHUNK_SIZE = 10;
   for (let i = 0; i < uniqueTargets.length; i += CHUNK_SIZE) {
     const chunk = uniqueTargets.slice(i, i + CHUNK_SIZE);
     await Promise.all(chunk.map(fetchOne));
   }
 
-  console.log("[Sidebar] Загружено lastMessages для:", Object.keys(lastMessages).length, "ключей");
   return lastMessages;
 }
 
-// ==========================================
-// 4. Сборка сайдбара
-// ==========================================
 async function fetchSidebar() {
   try {
     const me = window.AppState.currentUserId;
     const [mine, friends] = await Promise.all([loadMyChannels(), loadFriends()]);
     const lastMessages = await loadLastMessages(mine, friends);
 
-    // Закреплённые
     const newsMsg = lastMessages["news"];
     const globalMsg = lastMessages["__global__"];
     const pinned = [
@@ -136,7 +117,6 @@ async function fetchSidebar() {
       }
     ];
 
-    // Друзья
     const friendItems = friends.map(f => {
       const chatKey = dmKey(me, f.id);
       const msg = lastMessages[`friend-${f.id}`] || lastMessages[chatKey];
@@ -154,7 +134,6 @@ async function fetchSidebar() {
       };
     });
 
-    // Каналы и группы
     const channelItems = mine.map(c => {
       const isChannel = c.type === "channel";
       const msg = lastMessages[`${isChannel ? 'channel' : 'group'}-${c.id}`] || lastMessages[c.id];
@@ -168,7 +147,11 @@ async function fetchSidebar() {
         name: c.name || "Без названия",
         lastMessage: text,
         time: msg?.timestamp ? formatTime(msg.timestamp) : "",
-        timestamp: msg?.timestamp || 0
+        timestamp: msg?.timestamp || 0,
+        // 👇 ВАЖНО: Передаем данные о правах
+        creatorId: c.creatorId,
+        createdBy: c.createdBy,
+        admins: c.admins || []
       };
     });
 
@@ -182,9 +165,6 @@ async function fetchSidebar() {
   }
 }
 
-// ==========================================
-// 5. Рендер
-// ==========================================
 function renderSidebar(pinned, rest) {
   const list = document.getElementById("chatList");
   list.innerHTML = "";
@@ -228,7 +208,12 @@ function renderSidebar(pinned, rest) {
     el.appendChild(avatarDiv);
     el.appendChild(bodyDiv);
 
-    el.onclick = () => openChat(c.id, c.name, c.type);
+    // 👇 ВАЖНО: Передаем данные в openChat
+    el.onclick = () => openChat(c.id, c.name, c.type, {
+      creatorId: c.creatorId,
+      createdBy: c.createdBy,
+      admins: c.admins
+    });
     return el;
   };
 
@@ -236,9 +221,6 @@ function renderSidebar(pinned, rest) {
   rest.forEach(c => list.appendChild(renderItem(c)));
 }
 
-// ==========================================
-// 6. Публичные функции
-// ==========================================
 async function refreshChats() {
   const { pinned, rest } = await fetchSidebar();
   window.AppState.allChats = [...pinned, ...rest];
