@@ -6,7 +6,7 @@
 const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
 const CapacitorFS = isCapacitor ? window.Capacitor.Plugins.Filesystem : null;
 
-// Категории кеша
+// Категории кеша (пути для Android)
 window.CacheCategories = {
   sticker: { name: 'Drun Sticker', color: '#f59e0b', size: 0, folder: 'Drun/Stickers' },
   image:   { name: 'Drun Image',   color: '#3b82f6', size: 0, folder: 'Drun/Images' },
@@ -16,9 +16,10 @@ window.CacheCategories = {
 };
 
 // ==========================================
-// 1. Подсчет размера
+// 1. Подсчет размера кеша
 // ==========================================
 async function getCacheSize() {
+  // Сбрасываем размеры
   for (const key in window.CacheCategories) {
     window.CacheCategories[key].size = 0;
   }
@@ -29,15 +30,17 @@ async function getCacheSize() {
       for (const key in window.CacheCategories) {
         const cat = window.CacheCategories[key];
         
+        // Создаем папку, если её нет (Directory.External — это папка приложения)
         await CapacitorFS.mkdir({
           path: cat.folder,
-          directory: 'EXTERNAL_STORAGE',
+          directory: 'EXTERNAL',
           recursive: true
         }).catch(() => {});
 
+        // Читаем файлы
         const result = await CapacitorFS.readdir({
           path: cat.folder,
-          directory: 'EXTERNAL_STORAGE'
+          directory: 'EXTERNAL'
         }).catch(() => ({ files: [] }));
 
         let totalSize = 0;
@@ -45,7 +48,7 @@ async function getCacheSize() {
           if (file.type === 'file') {
             const stat = await CapacitorFS.stat({
               path: `${cat.folder}/${file.name}`,
-              directory: 'EXTERNAL_STORAGE'
+              directory: 'EXTERNAL'
             }).catch(() => null);
             if (stat) totalSize += stat.size;
           }
@@ -56,7 +59,7 @@ async function getCacheSize() {
       console.error("Ошибка чтения кеша (Capacitor):", e);
     }
   } else {
-    // В браузере: Cache API
+    // В браузере: используем Cache API
     if (!('caches' in window)) return;
     const cache = await caches.open('drunlite-media-v1');
     const keys = await cache.keys();
@@ -95,10 +98,12 @@ async function fetchWithCache(url, category = 'musor') {
     const filePath = `${cat.folder}/${filename}`;
     
     try {
-      await CapacitorFS.stat({ path: filePath, directory: 'EXTERNAL_STORAGE' });
-      const fileUri = await CapacitorFS.getUri({ path: filePath, directory: 'EXTERNAL_STORAGE' });
+      // Проверяем, есть ли файл уже на диске
+      await CapacitorFS.stat({ path: filePath, directory: 'EXTERNAL' });
+      const fileUri = await CapacitorFS.getUri({ path: filePath, directory: 'EXTERNAL' });
       return fileUri.uri;
     } catch (e) {
+      // Если файла нет — качаем и сохраняем
       try {
         const response = await fetch(url);
         const blob = await response.blob();
@@ -107,19 +112,19 @@ async function fetchWithCache(url, category = 'musor') {
         await CapacitorFS.writeFile({
           path: filePath,
           data: base64,
-          directory: 'EXTERNAL_STORAGE',
+          directory: 'EXTERNAL',
           recursive: true
         });
         
-        const fileUri = await CapacitorFS.getUri({ path: filePath, directory: 'EXTERNAL_STORAGE' });
+        const fileUri = await CapacitorFS.getUri({ path: filePath, directory: 'EXTERNAL' });
         return fileUri.uri;
       } catch (err) {
-        console.error("Ошибка сохранения:", err);
-        return url;
+        console.error("Ошибка сохранения файла:", err);
+        return url; // Если не удалось сохранить, возвращаем оригинальную ссылку
       }
     }
   } else {
-    // В браузере
+    // В браузере: используем Cache API
     if (!('caches' in window)) return url;
     const cache = await caches.open('drunlite-media-v1');
     const cached = await cache.match(url);
@@ -133,6 +138,7 @@ async function fetchWithCache(url, category = 'musor') {
   }
 }
 
+// Вспомогательная функция: blob -> base64
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -143,7 +149,7 @@ function blobToBase64(blob) {
 }
 
 // ==========================================
-// 3. Очистка
+// 3. Очистка кеша
 // ==========================================
 async function clearCacheByCategories(categoriesToClear) {
   if (isCapacitor && CapacitorFS) {
@@ -153,7 +159,7 @@ async function clearCacheByCategories(categoriesToClear) {
       try {
         await CapacitorFS.rmdir({
           path: cat.folder,
-          directory: 'EXTERNAL_STORAGE',
+          directory: 'EXTERNAL',
           recursive: true
         }).catch(() => {});
         cat.size = 0;
@@ -179,7 +185,7 @@ async function clearCacheByCategories(categoriesToClear) {
 }
 
 // ==========================================
-// 4. Форматирование
+// 4. Форматирование размера
 // ==========================================
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B';
