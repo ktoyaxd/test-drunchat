@@ -8,7 +8,7 @@
   height: 100%; 
   width: 100%; 
   position: relative; 
-  padding-bottom: 64px; /* Отступ для нижнего меню */
+  padding-bottom: 64px; 
 }
 #chatScreen.active { display: flex; }
 
@@ -30,7 +30,7 @@
 .chat-time { font-size: 12px; color: var(--tg-text-secondary); }
 .chat-message { font-size: 14px; color: var(--tg-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* НИЖНЕЕ МЕНЮ (теперь всегда на экране) */
+/* НИЖНЕЕ МЕНЮ */
 .bottom-nav { 
   position: fixed; 
   bottom: 0; 
@@ -43,7 +43,7 @@
   align-items: center; 
   justify-content: space-around; 
   border-top: 1px solid #303030; 
-  z-index: 1000; /* Поверх всех экранов */
+  z-index: 1000; 
 }
 .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--tg-text-secondary); text-decoration: none; font-size: 11px; flex: 1; padding: 8px 0; }
 .nav-item.active { color: var(--tg-btn-bg); }
@@ -59,104 +59,177 @@
   width: 100%;
   position: relative; 
   background: var(--tg-bg);
-  padding-bottom: 64px; /* Отступ для нижнего меню */
+  padding-bottom: 64px;
 }
+#settingsScreen.active { display: flex; }
 
-#settingsScreen.active {
-  display: flex;
-}
+/* Убираем стрелку из главного экрана настроек */
+#settingsScreen .header .back-btn { display: none; }
 
-.settings-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
+.settings-content { flex: 1; overflow-y: auto; padding: 16px; }
 
-.settings-profile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 24px;
-  margin-top: 16px;
-}
+.settings-profile { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; margin-top: 16px; }
 
 .settings-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #229AF0;
-  color: #fff;
-  font-size: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-  overflow: hidden;
+  width: 80px; height: 80px; border-radius: 50%; background: #229AF0;
+  color: #fff; font-size: 32px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px; overflow: hidden;
 }
+.settings-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-.settings-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.settings-name { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+.settings-phone { font-size: 14px; color: var(--tg-text-secondary); }
 
-.settings-name {
-  font-size: 20px;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
+.settings-list { background: #212121; border-radius: 12px; overflow: hidden; }
 
-.settings-phone {
-  font-size: 14px;
-  color: var(--tg-text-secondary);
-}
-
-.settings-list {
-  background: #212121;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.settings-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid #2c2c2c;
-}
-
-.settings-item:last-child {
-  border-bottom: none;
-}
-
-.settings-item:active {
-  background: var(--hover-bg);
-}
+.settings-item { display: flex; align-items: center; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #2c2c2c; }
+.settings-item:last-child { border-bottom: none; }
+.settings-item:active { background: var(--hover-bg); }
 
 .settings-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; margin-right: 12px; color: #fff;
+}
+.settings-text { display: flex; flex-direction: column; }
+.settings-title { font-size: 16px; color: var(--tg-text); margin-bottom: 2px; }
+.settings-subtitle { font-size: 13px; color: var(--tg-text-secondary); }
+
+/* ==========================================
+   ПОДЭКРАНЫ (Аккаунт, Данные)
+   ========================================== */
+.sub-screen {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--tg-bg);
+  z-index: 60;
+  padding-bottom: 64px;
+}
+.sub-screen.active { display: flex; }
+/* ==========================================
+   3D ШЛЯПА И ЧАСТИЦЫ
+   ========================================== */
+.slyapa-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  margin-right: 12px;
-  color: #fff;
+  margin-top: 20px;
+  perspective: 1000px; /* Для 3D эффекта */
 }
 
-.settings-text {
+.slyapa-3d {
+  width: 140px;
+  height: auto;
+  z-index: 2;
+  cursor: grab;
+  transition: transform 0.1s ease-out;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  /* Анимация покачивания в состоянии покоя */
+  animation: float 4s ease-in-out infinite;
+}
+
+.slyapa-3d:active {
+  cursor: grabbing;
+  animation: none; /* Останавливаем покачивание при вращении */
+}
+
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffd700; 
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffd700;
+  animation: sparkle infinite alternate;
+  opacity: 0;
+}
+
+.particles.fast .particle {
+  animation-duration: 0.4s !important;
+  background: #fff;
+  box-shadow: 0 0 15px #fff, 0 0 30px #ffd700;
+}
+
+@keyframes sparkle {
+  0% { transform: translateY(0) scale(0.3); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+/* ==========================================
+   ДИАГРАММА КЕША
+   ========================================== */
+.cache-chart-container {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
 }
 
-.settings-title {
-  font-size: 16px;
+.cache-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%; /* Делает круг */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 16px;
+  /* Убираем возможные фоны, если градиент не сработал */
+  background: #2c2c2c; 
+}
+
+.cache-circle-inner {
+  width: 120px;
+  height: 120px;
+  background: var(--tg-bg);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2; /* Чтобы текст был поверх градиента */
+}
+
+.cache-total {
+  font-size: 24px;
+  font-weight: bold;
   color: var(--tg-text);
-  margin-bottom: 2px;
 }
 
-.settings-subtitle {
-  font-size: 13px;
+.cache-unit {
+  font-size: 12px;
   color: var(--tg-text-secondary);
+}
+
+.cache-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--tg-text);
+}
+
+.cache-subtitle {
+  font-size: 14px;
+  color: var(--tg-text-secondary);
+  text-align: center;
 }
