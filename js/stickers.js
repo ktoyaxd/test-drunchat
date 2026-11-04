@@ -24,8 +24,13 @@ async function loadStickersCache() {
 async function loadSticker(stickerId) {
   try {
     const record = await pb.collection("mellstickers").getOne(stickerId);
-    const url = fileUrl("mellstickers", record, record.content);;
-    console.log("[Stickers] Загружен стикер:", record.id, "URL:", url);
+    const originalUrl = fileUrl("mellstickers", record, record.content);
+    
+    // 👇 ПРОПУСКАЕМ ЧЕРЕЗ КЕШ
+    let url = originalUrl;
+    if (typeof fetchWithCache === 'function') {
+      url = await fetchWithCache(originalUrl, 'sticker');
+    }
     
     let meta = {};
     try {
@@ -34,7 +39,7 @@ async function loadSticker(stickerId) {
 
     return {
       id: record.id,
-      url,
+      url: url,
       name: String(meta.name || ""),
       keywords: Array.isArray(meta.keywords) ? meta.keywords : []
     };
