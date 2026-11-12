@@ -83,7 +83,7 @@
    ========================================== */
 .bubble {
   max-width: 100%;
-  width: fit-content; /* Чтобы пузырь подстраивался под текст/цитату */
+  width: fit-content;
   padding: 8px 12px;
   border-radius: 16px;
   font-size: 15px;
@@ -94,7 +94,6 @@
   flex-direction: column;
 }
 
-/* Ограничение ширины самого пузыря через обертку */
 .message-row .bubble {
   max-width: 80vw; 
 }
@@ -131,7 +130,7 @@
   cursor: pointer;
   width: 100%;
   max-width: 100%;
-  min-width: 180px; /* Чтобы цитата не была слишком узкой */
+  min-width: 180px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -441,3 +440,22 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* Кроппер */
+.crop-modal { display: none; position: fixed; inset: 0; z-index: 10000; background: #000; flex-direction: column; }
+.crop-modal.active { display: flex; }
+.crop-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(0,0,0,0.8); color: #fff; font-size: 16px; z-index: 10; }
+.crop-header button { background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; padding: 8px; font-weight: 500; }
+.crop-header button.primary { color: #229AF0; }
+.crop-canvas-area { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; }
+#cropCanvas { max-width: 100%; max-height: 100%; cursor: crosshair; touch-action: none; }
+.crop-footer { padding: 16px 20px 24px; background: #000; display: flex; flex-direction: column; align-items: center; gap: 16px; border-top: 1px solid #222; }
+.rotate-slider-container { width: 100%; display: flex; align-items: center; gap: 12px; color: #fff; }
+.rotate-slider-container svg { width: 20px; height: 20px; flex-shrink: 0; }
+.rotate-slider-container input[type="range"] { flex: 1; -webkit-appearance: none; background: transparent; height: 20px; }
+.rotate-slider-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #229AF0; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.5); margin-top: -8px; }
+.rotate-slider-container input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: #333; border-radius: 2px; }
+.rotate-value { width: 50px; text-align: right; font-size: 14px; color: #fff; font-variant-numeric: tabular-nums; }
+.crop-actions { display: flex; justify-content: space-between; width: 100%; gap: 12px; }
+.crop-actions button { flex: 1; padding: 14px; border-radius: 12px; border: none; background: #1c1c1c; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+.crop-actions button:active { background: #333; }
