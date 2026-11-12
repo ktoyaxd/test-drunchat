@@ -1,3 +1,7 @@
+// ==========================================
+// js/settings.js
+// ==========================================
+
 async function loadSettingsProfile() {
   const user = pb.authStore.record || pb.authStore.model;
   if (!user) return;
@@ -6,7 +10,12 @@ async function loadSettingsProfile() {
   const nameEl = document.getElementById("settingsName");
   const phoneEl = document.getElementById("settingsPhone");
 
-  const displayName = user.name || user.username || "Без имени";
+  let displayName = "Пользователь";
+  if (typeof loadProfileName === 'function') {
+    displayName = await loadProfileName(user.id);
+  } else {
+    displayName = user.name || user.username || "Пользователь";
+  }
   nameEl.textContent = displayName;
 
   const phone = user.phone || user.phoneNumber || "";
@@ -14,8 +23,9 @@ async function loadSettingsProfile() {
   phoneEl.textContent = [phone, username].filter(Boolean).join(" • ");
 
   avatarEl.innerHTML = "";
-  if (user.avatar) {
-    const avatarUrl = fileUrl("users", user, user.avatar);
+  if (user.avatar || user.ProfileImg) {
+    const filename = user.avatar || user.ProfileImg;
+    const avatarUrl = fileUrl("users", user, filename);
     const img = document.createElement("img");
     img.src = avatarUrl;
     avatarEl.appendChild(img);
@@ -25,11 +35,18 @@ async function loadSettingsProfile() {
   }
 }
 
-function loadAccountScreen() {
+async function loadAccountScreen() {
   const user = pb.authStore.record || pb.authStore.model;
   if (!user) return;
 
-  document.getElementById("accName").textContent = user.name || user.username || "Без имени";
+  let displayName = "Пользователь";
+  if (typeof loadProfileName === 'function') {
+    displayName = await loadProfileName(user.id);
+  } else {
+    displayName = user.name || user.username || "Пользователь";
+  }
+  
+  document.getElementById("accName").textContent = displayName;
   document.getElementById("accBio").textContent = user.bio || "—";
 
   const list = document.getElementById("accountsList");
@@ -40,8 +57,8 @@ function loadAccountScreen() {
     const div = document.createElement("div");
     div.className = "settings-item";
     div.innerHTML = `
-      <div class="settings-avatar" style="width: 32px; height: 32px; font-size: 14px; margin: 0 12px 0 0;">${(user.name || "?")[0].toUpperCase()}</div>
-      <div class="settings-text"><div class="settings-title">${user.name || user.username}</div></div>
+      <div class="settings-avatar" style="width: 32px; height: 32px; font-size: 14px; margin: 0 12px 0 0;">${(displayName || "?")[0].toUpperCase()}</div>
+      <div class="settings-text"><div class="settings-title">${displayName}</div></div>
       <div style="margin-left: auto; color: var(--tg-text-secondary);">✓</div>
     `;
     list.appendChild(div);
@@ -59,6 +76,14 @@ function initSettings() {
   document.getElementById("settingsAccountBtn").onclick = () => showScreen("account");
   document.getElementById("settingsDataBtn").onclick = () => showScreen("data");
   document.getElementById("settingsSlyapaBtn").onclick = () => showScreen("slyapa");
+  
+  // 👇 Обработчик тестовой кнопки уведомления
+  const testBtn = document.getElementById("testNotificationBtn");
+  if (testBtn) {
+    testBtn.onclick = () => {
+      if (typeof showTestNotification === 'function') showTestNotification();
+    };
+  }
 }
 
 window.addEventListener("load", () => {
