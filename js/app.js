@@ -80,3 +80,18 @@ document.getElementById("searchInput").oninput = (e) => {
 if (typeof loadStickersCache === 'function') {
   loadStickersCache();
 }
+// ==========================================
+// Обработка системной кнопки "Назад" на Android
+// ==========================================
+if (window.Capacitor && window.Capacitor.isNative) {
+  Capacitor.Plugins.App.addListener('backButton', () => {
+    const messagesScreen = document.getElementById('messagesScreen');
+    if (messagesScreen.classList.contains('active')) {
+      // Если открыт чат — возвращаемся в список
+      document.getElementById('backToChatsBtn').click();
+    } else {
+      // Иначе выходим из приложения
+      Capacitor.Plugins.App.exitApp();
+    }
+  });
+}
