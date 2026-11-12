@@ -68,9 +68,22 @@
     </div>
     <div class="messages-area" id="messagesArea"></div>
     <button class="scroll-down-btn" id="scrollDownBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+    
     <div class="msg-input-area">
+      <button class="icon-btn" id="attachBtn" style="padding: 8px;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </button>
+      <input type="file" id="fileInput" accept="image/*" style="display: none;">
+      
       <input type="text" class="msg-input" id="msgInput" placeholder="Сообщение...">
-      <button class="send-btn" id="sendBtn"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      
+      <button class="send-btn" id="sendBtn">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
     </div>
   </div>
 
@@ -110,6 +123,15 @@
           </div>
           <div class="settings-text">
             <div class="settings-title">Шляпы</div>
+          </div>
+        </div>
+
+        <!-- 👇 ТЕСТОВАЯ КНОПКА УВЕДОМЛЕНИЯ -->
+        <div class="settings-item" id="testNotificationBtn">
+          <div class="settings-icon" style="background: #10b981;">🔔</div>
+          <div class="settings-text">
+            <div class="settings-title">Тестовое уведомление</div>
+            <div class="settings-subtitle">Проверить системные уведомления</div>
           </div>
         </div>
       </div>
@@ -185,19 +207,16 @@
     </header>
     
     <div class="settings-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1;">
-      <!-- 3D Шляпа и блёстки -->
       <div class="slyapa-container" style="margin-bottom: 20px;">
         <div class="particles" id="particles"></div>
         <img src="assets/icons/gold_slyapa.png" class="slyapa-3d" id="slyapa3d" alt="Gold Slyapa">
       </div>
 
-      <!-- Реальный баланс из PocketBase -->
       <div id="slyapaBalanceDisplay" style="font-size: 32px; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
         <img src="assets/icons/gold_slyapa.png" style="width: 32px; height: 32px;"> 
         <span id="slyapaBalanceValue">...</span>
       </div>
       <p style="color: var(--tg-text-secondary); margin-bottom: 20px;">Ваш баланс</p>
-
     </div>
   </div>
 
@@ -213,17 +232,43 @@
     </a>
   </nav>
 
+  <!-- МОДАЛКА ДЛЯ ОБРЕЗКИ ФОТО -->
+  <div id="cropModal" class="crop-modal">
+    <div class="crop-header">
+      <button id="cropCancel">ОТМЕНА</button>
+      <button id="cropConfirm" class="primary">ГОТОВО</button>
+    </div>
+    <div class="crop-canvas-area">
+      <canvas id="cropCanvas"></canvas>
+    </div>
+    <div class="crop-footer">
+      <div class="rotate-slider-container">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.56 2.59L21 8"/><path d="M21 3v5h-5"/></svg>
+        <input type="range" id="rotateSlider" min="0" max="360" value="0">
+        <span class="rotate-value" id="rotateValue">0°</span>
+      </div>
+      <div class="crop-actions">
+        <button id="cropSkip">ОРИГИНАЛ</button>
+        <button id="cropReset">СБРОС</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Подключение скриптов -->
   <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/cache.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/profile.js"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/stickers.js"></script>
   <script src="js/images.js"></script>
+  <script src="js/cropper.js"></script>
   <script src="js/chat.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/slyapa.js"></script>
+  <script src="js/notifications.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
