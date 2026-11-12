@@ -233,3 +233,14 @@
   color: var(--tg-text-secondary);
   text-align: center;
 }
+/* ==========================================
+   КОПИИ ШЛЯПЫ (для анимации)
+   ========================================== */
+.slyapa-clone {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none; /* Чтобы не мешали кликам */
+  transition: opacity 0.3s;
+  z-index: 0; /* Позади основной шляпы */
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
