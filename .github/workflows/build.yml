@@ -48,7 +48,11 @@ jobs:
             "webDir": "www",
             "server": { "androidScheme": "https" },
             "plugins": {
-              "StatusBar": { "style": "DARK", "backgroundColor": "#181818" }
+              "StatusBar": { "style": "DARK", "backgroundColor": "#181818" },
+              "LocalNotifications": {
+                "smallIcon": "dl48x",
+                "iconColor": "#229AF0"
+              }
             }
           }
           EOF
@@ -56,7 +60,6 @@ jobs:
       - name: Add Android
         run: npx cap add android
 
-      # 👇 Копируем звук и иконку в нативные папки
       - name: Copy Notification Assets
         run: |
           mkdir -p android/app/src/main/res/raw
@@ -70,15 +73,17 @@ jobs:
             npx capacitor-assets generate --android
           fi
 
+      # 👇 Версия 1.0 beta (4)
       - name: Set Version
         run: |
           sed -i 's/versionCode 1/versionCode 4/' android/app/build.gradle
           sed -i 's/versionName "1.0"/versionName "1.0 beta (4)"/' android/app/build.gradle
 
+      # 👇 Разрешения (добавлены FOREGROUND_SERVICE, VIBRATE и т.д.)
       - name: Add Android Permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i 's/<application/<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" \/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" \/>\n    <application/' $MANIFEST
+          sed -i 's/<application/<uses-permission android:name="android.permission.POST_NOTIFICATIONS" \/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK" \/>\n    <uses-permission android:name="android.permission.VIBRATE" \/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" \/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" \/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" \/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" \/>\n    <application/' $MANIFEST
 
       - name: Sync
         run: npx cap sync
@@ -92,5 +97,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DrunLite-APK
+          name: DrunLite-APK-beta4
           path: android/app/build/outputs/apk/debug/app-debug.apk
