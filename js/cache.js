@@ -8,30 +8,14 @@ const CapacitorFS = isCapacitor ? window.Capacitor.Plugins.Filesystem : null;
 window.CacheCategories = {
   sticker: { name: 'Drun Sticker', color: '#f59e0b', size: 0, folder: 'Drun/Stickers' },
   image:   { name: 'Drun Image',   color: '#3b82f6', size: 0, folder: 'Drun/Images' },
+  photo:   { name: 'Drun Photo',   color: '#ec4899', size: 0, folder: 'Drun/Photos' },
   video:   { name: 'Drun Video',   color: '#10b981', size: 0, folder: 'Drun/Videos' },
   doc:     { name: 'Drun Documents', color: '#8b5cf6', size: 0, folder: 'Drun/Documents' },
   musor:   { name: 'Drun Musor',   color: '#6b7280', size: 0, folder: 'Drun/Other' }
 };
 
-// 👇 НОВАЯ ФУНКЦИЯ: Запрос разрешения на запись в Android/data
-async function requestStoragePermission() {
-  if (!isCapacitor) return true;
-  
-  try {
-    const status = await CapacitorFS.checkPermissions();
-    if (status.publicStorage === 'granted') return true;
-
-    // Если не выдано — запрашиваем
-    const request = await CapacitorFS.requestPermissions();
-    return request.publicStorage === 'granted';
-  } catch (e) {
-    console.error("Ошибка запроса разрешения:", e);
-    return false;
-  }
-}
-
 // ==========================================
-// 1. Подсчет размера кеша
+// 1. Подсчет размера
 // ==========================================
 async function getCacheSize() {
   for (const key in window.CacheCategories) {
@@ -39,12 +23,6 @@ async function getCacheSize() {
   }
 
   if (isCapacitor && CapacitorFS) {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) {
-      console.warn("Нет разрешения на чтение кеша");
-      return;
-    }
-
     try {
       for (const key in window.CacheCategories) {
         const cat = window.CacheCategories[key];
@@ -73,10 +51,9 @@ async function getCacheSize() {
         cat.size = totalSize;
       }
     } catch (e) {
-      console.error("Ошибка чтения кеша:", e);
+      console.error("Ошибка чтения кеша (Capacitor):", e);
     }
   } else {
-    // Браузерный Cache API (без изменений)
     if (!('caches' in window)) return;
     const cache = await caches.open('drunlite-media-v1');
     const keys = await cache.keys();
@@ -91,8 +68,8 @@ async function getCacheSize() {
 
       if (url.includes('mellstickers') || url.endsWith('.webm')) {
         window.CacheCategories.sticker.size += size;
-      } else if (url.includes('messages') && /\.(jpg|jpeg|png|gif)$/i.test(url)) {
-        window.CacheCategories.image.size += size;
+      } else if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
+        window.CacheCategories.photo.size += size;
       } else if (/\.(mp4|mov)$/i.test(url)) {
         window.CacheCategories.video.size += size;
       } else if (/\.(pdf|doc|docx|txt)$/i.test(url)) {
@@ -111,9 +88,6 @@ async function fetchWithCache(url, category = 'musor') {
   const cat = window.CacheCategories[category] || window.CacheCategories.musor;
 
   if (isCapacitor && CapacitorFS) {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) return url; // Если нет прав — грузим напрямую
-
     const filename = url.split('/').pop().split('?')[0];
     const filePath = `${cat.folder}/${filename}`;
     
@@ -137,7 +111,7 @@ async function fetchWithCache(url, category = 'musor') {
         const fileUri = await CapacitorFS.getUri({ path: filePath, directory: 'EXTERNAL_STORAGE' });
         return fileUri.uri;
       } catch (err) {
-        console.error("Ошибка сохранения файла:", err);
+        console.error("Ошибка сохранения:", err);
         return url;
       }
     }
@@ -165,13 +139,10 @@ function blobToBase64(blob) {
 }
 
 // ==========================================
-// 3. Очистка кеша
+// 3. Очистка
 // ==========================================
 async function clearCacheByCategories(categoriesToClear) {
   if (isCapacitor && CapacitorFS) {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) return;
-
     for (const key of categoriesToClear) {
       const cat = window.CacheCategories[key];
       if (!cat) continue;
@@ -192,7 +163,7 @@ async function clearCacheByCategories(categoriesToClear) {
       const url = request.url;
       let category = 'musor';
       if (url.includes('mellstickers') || url.endsWith('.webm')) category = 'sticker';
-      else if (url.includes('messages') && /\.(jpg|jpeg|png|gif)$/i.test(url)) category = 'image';
+      else if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) category = 'photo';
       else if (/\.(mp4|mov)$/i.test(url)) category = 'video';
       else if (/\.(pdf|doc|docx|txt)$/i.test(url)) category = 'doc';
 
@@ -209,4 +180,98 @@ function formatBytes(bytes) {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// ==========================================
+// 4. Кеш сообщений (в musor)
+// ==========================================
+async function saveMessagesToCache(channelId, messages) {
+  if (isCapacitor && CapacitorFS) {
+    const cat = window.CacheCategories.musor;
+    const filePath = `${cat.folder}/messages_${channelId.replace(/[^a-z0-9]/gi, '_')}.json`;
+    try {
+      const jsonStr = JSON.stringify(messages);
+      const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+      await CapacitorFS.writeFile({
+        path: filePath,
+        data: base64,
+        directory: 'EXTERNAL_STORAGE',
+        recursive: true
+      });
+    } catch (e) {
+      console.error("Ошибка сохранения сообщений в кеш:", e);
+    }
+  } else {
+    try {
+      localStorage.setItem(`drun_msgs_${channelId}`, JSON.stringify(messages));
+    } catch (e) {}
+  }
+}
+
+async function loadMessagesFromCache(channelId) {
+  if (isCapacitor && CapacitorFS) {
+    const cat = window.CacheCategories.musor;
+    const filePath = `${cat.folder}/messages_${channelId.replace(/[^a-z0-9]/gi, '_')}.json`;
+    try {
+      const result = await CapacitorFS.readFile({
+        path: filePath,
+        directory: 'EXTERNAL_STORAGE'
+      });
+      const jsonStr = decodeURIComponent(escape(atob(result.data)));
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      return null;
+    }
+  } else {
+    try {
+      const data = localStorage.getItem(`drun_msgs_${channelId}`);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
+// ==========================================
+// 5. Сохранение профиля в kv_store (с игнором 403)
+// ==========================================
+async function saveProfileToKv(user) {
+  if (!user?.id || isEmptyName(user.name)) return;
+  
+  const key = `profile:${user.id}`;
+  const value = {
+    id: user.id,
+    name: user.name || "",
+    username: String(user.username || "").replace(/^@+/, ""),
+    emoji: user.emoji || "",
+    ProfileImg: user.ProfileImg || "",
+    avatar: user.avatar || "",
+    tag: user.tag || "",
+    tagColor: user.tagColor || "",
+    tagGradient: user.tagGradient || "",
+    customVerified: !!user.customVerified,
+    verified: !!(user.customVerified || user.verified || user.isBusiness),
+    subscription: user.subscription,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const rec = await pb.collection("kv_store").getFirstListItem(
+      pb.filter("key = {:key}", { key }),
+      { requestKey: null }
+    ).catch(() => null);
+
+    if (rec) {
+      await pb.collection("kv_store").update(rec.id, { key, value }, { requestKey: null });
+    } else {
+      await pb.collection("kv_store").create({ key, value }, { requestKey: null });
+    }
+    console.log(`[Profile] Сохранён в kv_store: ${key}`);
+  } catch (e) {
+    if (e?.status === 403) {
+      console.log("[Profile] kv_store закрыт (403) — пропускаем сохранение");
+    } else {
+      console.warn("[Profile] Не удалось сохранить в kv_store:", e);
+    }
+  }
 }
