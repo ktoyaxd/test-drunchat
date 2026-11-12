@@ -12,7 +12,6 @@ async function renderDataScreen() {
     totalSize += window.CacheCategories[key].size;
   }
 
-  // Если кеш пуст, показываем красивую заглушку
   if (totalSize === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 40px 20px; color: var(--tg-text-secondary);">
@@ -24,24 +23,23 @@ async function renderDataScreen() {
     return;
   }
 
-  // Считаем проценты для градиента (защита от деления на ноль)
   const pSticker = (window.CacheCategories.sticker.size / totalSize) * 100 || 0;
   const pImage = (window.CacheCategories.image.size / totalSize) * 100 || 0;
+  const pPhoto = (window.CacheCategories.photo.size / totalSize) * 100 || 0;
   const pVideo = (window.CacheCategories.video.size / totalSize) * 100 || 0;
   const pDoc = (window.CacheCategories.doc.size / totalSize) * 100 || 0;
 
-  // Строим градиент
   let currentAngle = 0;
   let gradientParts = [];
   
   if (pSticker > 0) { gradientParts.push(`#f59e0b ${currentAngle}% ${currentAngle + pSticker}%`); currentAngle += pSticker; }
   if (pImage > 0) { gradientParts.push(`#3b82f6 ${currentAngle}% ${currentAngle + pImage}%`); currentAngle += pImage; }
+  if (pPhoto > 0) { gradientParts.push(`#ec4899 ${currentAngle}% ${currentAngle + pPhoto}%`); currentAngle += pPhoto; }
   if (pVideo > 0) { gradientParts.push(`#10b981 ${currentAngle}% ${currentAngle + pVideo}%`); currentAngle += pVideo; }
   if (pDoc > 0) { gradientParts.push(`#8b5cf6 ${currentAngle}% ${currentAngle + pDoc}%`); currentAngle += pDoc; }
   
   const gradient = `conic-gradient(${gradientParts.join(', ')})`;
 
-  // Строим HTML
   let html = `
     <div class="cache-chart-container">
       <div class="cache-circle" style="background: ${gradient};">
