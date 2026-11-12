@@ -62,13 +62,13 @@ async function loadLastMessages(mine, friends) {
       const page = await pb.collection("messages").getList(1, 1, {
         sort: "-created",
         filter: pb.filter("channelId = {:id}", { id: target.id }),
-        fields: "channelId,content,text,created,timestamp,senderId"
+        fields: "channelId,content,text,image,created,timestamp,senderId" // 👈 добавили image
       });
       const m = page.items[0];
       if (!m) return null;
       
       const entry = {
-        content: m.content || m.text || "",
+        content: m.content || m.text || (m.image ? "📷 Фото" : ""), // 👈 проверяем image
         timestamp: m.timestamp || m.created,
         senderId: m.senderId
       };
@@ -93,7 +93,6 @@ async function loadLastMessages(mine, friends) {
 
   return lastMessages;
 }
-
 async function fetchSidebar() {
   try {
     const me = window.AppState.currentUserId;
@@ -127,7 +126,7 @@ async function fetchSidebar() {
         key: `friend-${f.id}`,
         type: "friend",
         id: chatKey,
-        name: f.name || f.username || "Без имени",
+        name: getSenderName(f.id, f.name || f.username),
         lastMessage: text,
         time: msg?.timestamp ? formatTime(msg.timestamp) : "",
         timestamp: msg?.timestamp || 0
